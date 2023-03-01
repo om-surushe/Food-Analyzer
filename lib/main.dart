@@ -19,7 +19,7 @@ Future<void> main() async {
 
   final cameras = await availableCameras();
 
-  final firstCamera = cameras.first;
+  final firstCamera = cameras[0];
 
   runApp(MaterialApp(
     title: 'Flutter Demo',
@@ -423,9 +423,7 @@ class _AnalysisWidgetState extends State<AnalysisWidget> {
 
         // if length is greater than 1, show the rest of the ingredients
         if (widget.foodResponse.goodIngrediants.length > 1)
-          for (var i = 0;
-              i < widget.foodResponse.goodIngrediants.length;
-              i++)
+          for (var i = 0; i < widget.foodResponse.goodIngrediants.length; i++)
             ExpandedIngredients(
               ingredient: widget.foodResponse.goodIngrediants[i][0].toString(),
               description: widget.foodResponse.goodIngrediants[i][1].toString(),
@@ -434,14 +432,41 @@ class _AnalysisWidgetState extends State<AnalysisWidget> {
 
         // if length is greater than 1, show the rest of the ingredients
         if (widget.foodResponse.badIngrediants.length > 1)
-          for (var i = 0;
-              i < widget.foodResponse.badIngrediants.length;
-              i++)
+          for (var i = 0; i < widget.foodResponse.badIngrediants.length; i++)
             ExpandedIngredients(
               ingredient: widget.foodResponse.badIngrediants[i][0].toString(),
               description: widget.foodResponse.badIngrediants[i][1].toString(),
               color: Colors.red,
             ),
+
+        if (widget.foodResponse.hasSodium)
+          Quantity(
+            percent: widget.foodResponse.sodiumuPercentage.toDouble(),
+            max: 100,
+            amount: widget.foodResponse.sodiumQuantity.toDouble(),
+            name: "Sodium",
+          ),
+
+        if (widget.foodResponse.hasSugar)
+          Quantity(
+            percent: widget.foodResponse.sugarPercentage.toDouble(),
+            max: 100,
+            amount: widget.foodResponse.sugarQuantity.toDouble(),
+            name: "Sugar",
+          ),
+
+        if (widget.foodResponse.hasCarbs)
+          Quantity(
+            percent: widget.foodResponse.carbsPercentage.toDouble(),
+            max: 100,
+            amount: widget.foodResponse.carbsQuantity.toDouble(),
+            name: "Carbs",
+          ),
+
+        // add padding in the bottom
+        const SizedBox(
+          height: 10,
+        )
       ],
     ));
   }
@@ -455,7 +480,10 @@ class ExpandedIngredients extends StatefulWidget {
   Color color;
   bool isExpanded = false;
   ExpandedIngredients(
-      {super.key, required this.ingredient,required this.description , required this.color});
+      {super.key,
+      required this.ingredient,
+      required this.description,
+      required this.color});
 
   @override
   State<ExpandedIngredients> createState() => _ExpandedIngredientsState();
@@ -481,7 +509,9 @@ class _ExpandedIngredientsState extends State<ExpandedIngredients> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(widget.ingredient),
-                    Icon(widget.isExpanded ? Icons.expand_less : Icons.expand_more),
+                    Icon(widget.isExpanded
+                        ? Icons.expand_less
+                        : Icons.expand_more),
                   ],
                 ),
               ),
@@ -489,6 +519,41 @@ class _ExpandedIngredientsState extends State<ExpandedIngredients> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// make a stateful widget for showing the percentage of sodium with progress bar, and the amount of sodium
+class Quantity extends StatefulWidget {
+  final double percent;
+  final double max;
+  final double amount;
+  final String name;
+  const Quantity(
+      {super.key,
+      required this.percent,
+      required this.max,
+      required this.amount,
+      required this.name});
+
+  @override
+  State<Quantity> createState() => _QuantityState();
+}
+
+class _QuantityState extends State<Quantity> {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          Text(widget.name),
+          LinearProgressIndicator(
+            value: widget.amount / widget.max,
+          ),
+          Text(widget.amount.toString()),
+        ],
       ),
     );
   }
