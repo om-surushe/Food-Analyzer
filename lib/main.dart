@@ -1,28 +1,27 @@
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
+// Camera and OCR
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-
+// FoodResponse Model
 import 'package:nutriscan/food_response.dart';
-import 'package:path/path.dart';
 
 Future<void> main() async {
+  // Initialize the camera
   WidgetsFlutterBinding.ensureInitialized();
-
   final cameras = await availableCameras();
 
+  // Get a specific camera from the list of available cameras.
   final firstCamera = cameras[0];
 
   runApp(MaterialApp(
-    title: 'Flutter Demo',
+    title: 'NutriScan',
     theme: ThemeData(
       primarySwatch: Colors.green,
     ),
@@ -30,29 +29,18 @@ Future<void> main() async {
   ));
 }
 
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Flutter Demo',
-//       theme: ThemeData(
-//         primarySwatch: Colors.green,
-//       ),
-//       home: MyHomePage(title: 'NutriScan'),
-//     );
-//   }
-// }
-
 class MyHomePage extends StatefulWidget {
-  String title;
-  final CameraDescription camera;
-  MyHomePage({super.key, required this.title, required this.camera});
+  // This widget is the home page of your application.
+  final String title; // title of the app
+  final CameraDescription camera; // camera to be used
+  const MyHomePage({super.key, required this.title, required this.camera});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // variables to be used
   bool nuts = false,
       onion = false,
       lactose = false,
@@ -64,16 +52,20 @@ class _MyHomePageState extends State<MyHomePage> {
       tableImage = false,
       isAnalyzed = false;
 
+  // ingredients and nutrition table
   String ingredients = "", nutritionTable = "", result = "";
 
   // save the current photo ans show it
   late File _imageFile;
 
+  // food response
   late FoodResponse food;
 
+  // camera controller
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
 
+  // function to send post request to the api
   Future<http.Response> analyse() {
     var body = tableImage
         ? jsonEncode({
@@ -95,16 +87,19 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    // initialize the camera controller
     _controller = CameraController(
       widget.camera,
       ResolutionPreset.medium,
     );
 
+    // Next, initialize the controller. This returns a Future.
     _initializeControllerFuture = _controller.initialize();
   }
 
   @override
   void dispose() {
+    // Dispose of the controller when the widget is disposed.
     _controller.dispose();
     super.dispose();
   }
@@ -113,67 +108,79 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // keep the app bar title in the center
-        title: Text(widget.title, style: TextStyle(color: Colors.black)),
+        // set the app bar title
+        title: Text(widget.title, style: const TextStyle(color: Colors.black)),
 
-        // keep the app bar title in the center
+        // set the app bar background color
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // message to be shown
+            // check if the ingredients and nutrition table are scanned
             finalIngredients & tableImage
-                ? Text(
+                ?
+                // if yes, show the result
+                const Text(
                     "Scan Nutrition Table",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   )
-                : finalIngredients
-                    ? Text(
+                :
+                // if only ingredients are scanned, show the scan nutrition table button
+                finalIngredients
+                    ? const Text(
                         "Scan Nutrition Table",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
                       )
-                    : Text(
+                    :
+                    // if nothing is scanned, show the scan ingredients button
+                    const Text(
                         "Scan Ingredients",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
 
-            // create a widget for camera and scan button
+            // show the image taken
             Padding(
               padding: const EdgeInsets.only(
                   top: 10.0, left: 20, right: 20, bottom: 10),
               child: SizedBox(
                 height: 300,
-                child: imageTaken
-                    ?
-                    // show the image
-                    Image.file(_imageFile)
-                    : FutureBuilder<void>(
-                        future: _initializeControllerFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.done) {
-                            // If the Future is complete, display the preview.
-                            return CameraPreview(_controller);
-                          } else {
-                            // Otherwise, display a loading indicator.
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
-                        },
-                      ),
+                child:
+                    // check if the image is taken
+                    imageTaken
+                        ?
+                        // if yes, show the image
+                        Image.file(_imageFile)
+                        :
+                        // if no, show the camera preview
+                        FutureBuilder<void>(
+                            future: _initializeControllerFuture,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.done) {
+                                // If the Future is complete, display the preview.
+                                return CameraPreview(_controller);
+                              } else {
+                                // Otherwise, display a loading indicator.
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
+                            },
+                          ),
               ),
             ),
 
-            // create a button for scan
+            // check if the ingredients and nutrition table are scanned
             finalIngredients & tableImage
-                ? Row(
+                ?
+                // if yes, show the result
+                Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Scan Nutrition Table again button
@@ -184,7 +191,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             imageTaken = false;
                           });
                         },
-                        child: Text("Retake"),
+                        child: const Text("Retake"),
                       ),
                       ElevatedButton(
                           onPressed: () async {
@@ -216,22 +223,25 @@ class _MyHomePageState extends State<MyHomePage> {
                               food = foodResponse;
                             });
                           },
-                          child: Text("Analyse")),
+                          // Analyse button to send the request
+                          child: const Text("Analyse")),
                     ],
                   )
-                : finalIngredients
+                :
+                // if only ingredients are scanned, show the scan nutrition table button
+                finalIngredients
                     ? Row(
                         // scan nutrition table or skip button
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          // scan nutrition table button
                           ElevatedButton(
-                            child: Text("Scan"),
+                            child: const Text("Scan"),
                             onPressed: () async {
                               final image = await _controller.takePicture();
 
                               if (!mounted) return;
-                              InputImage inputImage = InputImage.fromFilePath(
-                                  image.path); // a File object
+// a File object
 
                               // set the new image to the image file and show it
                               setState(() {
@@ -242,9 +252,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             },
                           ),
 
-                          // skip button
+                          // skip button to send the request without nutrition table
                           ElevatedButton(
-                            child: Text("Skip"),
+                            child: const Text("Skip"),
                             onPressed: () async {
                               // send get request to https://foodanalyzer-fast-api.onrender.com
                               final response = await analyse();
@@ -266,7 +276,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // make button to scan again
+                          // scan ingredients button
                           imageTaken
                               ? ElevatedButton(
                                   onPressed: () {
@@ -274,12 +284,14 @@ class _MyHomePageState extends State<MyHomePage> {
                                       imageTaken = false;
                                     });
                                   },
-                                  child: Text("Retake"),
+                                  child: const Text("Retake"),
                                 )
                               : ElevatedButton(
-                                  child: Text("Scan"),
+                                  child: const Text("Scan"),
                                   onPressed: () async {
                                     try {
+                                      // Ensure that the camera is initialized.
+                                      // turn off the flash
                                       await _initializeControllerFuture;
                                       await _controller
                                           .setFlashMode(FlashMode.off);
@@ -287,9 +299,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                           await _controller.takePicture();
 
                                       if (!mounted) return;
-                                      InputImage inputImage =
-                                          InputImage.fromFilePath(
-                                              image.path); // a File object
+// a File object
                                       // set the new image to the image file and show it
                                       setState(() {
                                         imageTaken = true;
@@ -297,7 +307,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                       });
                                     } catch (e) {
                                       // If an error occurs, log the error to the console.
-                                      print(e);
+                                      if (kDebugMode) {
+                                        print(e);
+                                      }
                                     }
                                   },
                                 ),
@@ -317,6 +329,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                                     String text = recognizedText.text;
                                     setState(() {
+                                      // set the ingredients to the text
                                       finalIngredients = true;
                                       ingredients = text.replaceAll("\n", " ");
                                       imageTaken = false;
@@ -325,17 +338,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                       print(ingredients);
                                     }
                                   },
-                                  child: Text("Next"),
+                                  child: const Text("Next"),
                                 )
                               : Container(),
                         ],
                       ),
 
             isAnalyzed ? AnalysisWidget(foodResponse: food) : Container(),
-
-            // finalIngredients ? Text(ingredients) : Container(),
-
-            // tableImage ? Text(nutritionTable) : Container(),
           ],
         ),
       ),
@@ -345,6 +354,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 // make a stateful widget for showing the analysis on FoodResponse
 class AnalysisWidget extends StatefulWidget {
+  // get the food response from the parent widget and fill it in a model
   final FoodResponse foodResponse;
   const AnalysisWidget({super.key, required this.foodResponse});
 
@@ -355,11 +365,12 @@ class AnalysisWidget extends StatefulWidget {
 class _AnalysisWidgetState extends State<AnalysisWidget> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-        child: Column(
+    return Column(
       children: [
         const Text("Analysis"),
-        // make a horizontal card showing weather it has onion or not
+
+        // card which shows the name of the food is present or not
+
         // hasNuts;
         Card(
           child: Row(
@@ -439,7 +450,7 @@ class _AnalysisWidgetState extends State<AnalysisWidget> {
               color: Colors.red,
             ),
 
-        if (widget.foodResponse.hasSodium)
+        // if (widget.foodResponse.hasSodium)
           Quantity(
             percent: widget.foodResponse.sodiumuPercentage.toDouble(),
             max: 100,
@@ -447,7 +458,7 @@ class _AnalysisWidgetState extends State<AnalysisWidget> {
             name: "Sodium",
           ),
 
-        if (widget.foodResponse.hasSugar)
+        // if (widget.foodResponse.hasSugar)
           Quantity(
             percent: widget.foodResponse.sugarPercentage.toDouble(),
             max: 100,
@@ -455,7 +466,7 @@ class _AnalysisWidgetState extends State<AnalysisWidget> {
             name: "Sugar",
           ),
 
-        if (widget.foodResponse.hasCarbs)
+        // if (widget.foodResponse.hasCarbs)
           Quantity(
             percent: widget.foodResponse.carbsPercentage.toDouble(),
             max: 100,
@@ -468,7 +479,7 @@ class _AnalysisWidgetState extends State<AnalysisWidget> {
           height: 10,
         )
       ],
-    ));
+    );
   }
 }
 
@@ -477,9 +488,8 @@ class ExpandedIngredients extends StatefulWidget {
   // ingredient, description
   final String ingredient;
   final String description;
-  Color color;
-  bool isExpanded = false;
-  ExpandedIngredients(
+  final Color color;
+  const ExpandedIngredients(
       {super.key,
       required this.ingredient,
       required this.description,
@@ -490,6 +500,8 @@ class ExpandedIngredients extends StatefulWidget {
 }
 
 class _ExpandedIngredientsState extends State<ExpandedIngredients> {
+  bool isExpanded = false;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -497,25 +509,23 @@ class _ExpandedIngredientsState extends State<ExpandedIngredients> {
       child: InkWell(
         onTap: () {
           setState(() {
-            widget.isExpanded = !widget.isExpanded;
+            isExpanded = !isExpanded;
           });
         },
         child: Container(
           color: widget.color,
           child: Column(
             children: [
-              Container(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(widget.ingredient),
-                    Icon(widget.isExpanded
-                        ? Icons.expand_less
-                        : Icons.expand_more),
-                  ],
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(widget.ingredient),
+                  Icon(isExpanded
+                      ? Icons.expand_less
+                      : Icons.expand_more),
+                ],
               ),
-              widget.isExpanded ? Text(widget.description) : Container(),
+              isExpanded ? Text(widget.description) : Container(),
             ],
           ),
         ),
